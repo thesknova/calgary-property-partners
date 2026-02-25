@@ -474,6 +474,57 @@
   @keyframes slideIn { from { transform: translateX(20px); opacity:0; } to { transform:translateX(0); opacity:1; } }
   #notif .n-title { font-size:12px; color:var(--gold); font-weight:600; margin-bottom:4px; font-family:'DM Mono',monospace; }
   #notif .n-body  { font-size:12px; color:var(--text-dim); line-height:1.5; }
+
+  /* ── MOBILE ── */
+  @media (max-width: 768px) {
+    /* Windows fill the screen below the menu bar */
+    .window {
+      position: fixed !important;
+      top: 28px !important; left: 0 !important;
+      width: 100vw !important;
+      height: calc(100vh - 28px) !important;
+      border-radius: 0 !important;
+      resize: none !important;
+      min-width: unset !important;
+    }
+
+    /* Dock: full-width scrollable strip at bottom */
+    #dock-wrap { left: 0; right: 0; bottom: 0; transform: none; }
+    #dock {
+      border-radius: 14px 14px 0 0; border-bottom: none;
+      overflow-x: auto; padding: 8px 12px 14px; gap: 8px;
+      scrollbar-width: none; -ms-overflow-style: none;
+    }
+    #dock::-webkit-scrollbar { display: none; }
+    .dock-icon { width: 44px; height: 44px; font-size: 20px; }
+    .dock-tooltip { display: none; }
+    .dock-sep { height: 32px; }
+
+    /* Icons */
+    #icons-area { top: 36px; bottom: 80px; padding: 20px 16px; gap: 14px; }
+
+    /* Window body */
+    .win-body { padding: 20px 16px; }
+
+    /* Single-column layouts */
+    .calc-grid        { grid-template-columns: 1fr; }
+    .form-two         { grid-template-columns: 1fr; }
+    .stat-grid        { grid-template-columns: repeat(2, 1fr); }
+    .brh-results-grid { grid-template-columns: repeat(2, 1fr); }
+
+    /* Wordle: hide score sidebar, shrink keyboard to fit */
+    #wordle-score-panel { display: none; }
+    #wordle-wrap { padding: 12px 8px; }
+    .kb-row { gap: 4px; }
+    .kb-key { height: 40px; min-width: 26px; padding: 0 2px; }
+    .kb-key.wide { min-width: 40px; font-size: 10px; }
+
+    /* Hide decorative wallpaper text */
+    #wallpaper-text { display: none; }
+
+    /* Notification: full-width on mobile */
+    #notif { left: 12px; right: 12px; max-width: unset; }
+  }
 </style>
 </head>
 <body>
@@ -2114,6 +2165,14 @@
       icon.classList.add('selected');
     });
   });
+
+  // ── MOBILE: single-tap opens app (dblclick doesn't fire on touch) ──
+  if ('ontouchstart' in window || window.innerWidth <= 768) {
+    document.querySelectorAll('.desk-icon[ondblclick]').forEach(icon => {
+      const m = icon.getAttribute('ondblclick').match(/openApp\('(\w+)'\)/);
+      if (m) icon.addEventListener('click', () => openApp(m[1]));
+    });
+  }
 </script>
 </body>
 </html>
