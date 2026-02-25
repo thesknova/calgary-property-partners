@@ -2032,78 +2032,57 @@
     usdEl.textContent = 'Loading…';
 
     try {
-      let priceUSD, priceCAD, chg24h, mcapUSD, high24, low24;
+      let priceUSD, priceCAD, chg24h, high24, low24;
 
-      // Primary: CoinGecko — free, no key, returns CAD + all metrics in one call
-      let geckoOk = false;
+      // Primary price source: mempool.space — no key, returns USD + CAD in one call
       try {
-        const r = await fetch(
-          'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,cad&include_24hr_high=true&include_24hr_low=true&include_24hr_change=true&include_market_cap=true',
-          { headers: { 'Accept': 'application/json' } }
-        );
+        const r = await fetch('https://mempool.space/api/v1/prices');
         if (r.ok) {
           const j = await r.json();
-          const btc = j.bitcoin;
-          if (btc?.usd) {
-            priceUSD = btc.usd;
-            priceCAD = btc.cad;
-            chg24h   = btc.usd_24h_change;
-            mcapUSD  = btc.usd_market_cap;
-            high24   = btc.usd_24h_high;
-            low24    = btc.usd_24h_low;
-            geckoOk  = true;
-          }
+          if (j?.USD) { priceUSD = j.USD; priceCAD = j.CAD; }
         }
       } catch(_) {}
 
-      // Fallback: Binance public API — always free, no key
-      if (!geckoOk) {
-        const r = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT', {
-          headers: { 'Accept': 'application/json' }
-        });
-        if (!r.ok) throw new Error('Binance HTTP ' + r.status);
-        const b = await r.json();
-        priceUSD = parseFloat(b.lastPrice);
-        chg24h   = parseFloat(b.priceChangePercent);
-        high24   = parseFloat(b.highPrice);
-        low24    = parseFloat(b.lowPrice);
-      }
+      // 24h stats + price fallback: Binance public ticker — no key, no custom headers
+      try {
+        const r = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT');
+        if (r.ok) {
+          const b = await r.json();
+          if (!priceUSD) priceUSD = parseFloat(b.lastPrice);
+          chg24h = parseFloat(b.priceChangePercent);
+          high24 = parseFloat(b.highPrice);
+          low24  = parseFloat(b.lowPrice);
+        }
+      } catch(_) {}
 
-      // CAD rate if CoinGecko didn't supply it
+      if (!priceUSD) throw new Error('All price sources failed');
+
+      // CAD fallback if mempool.space didn't supply it
       if (!priceCAD) {
         let cadRate = 1.36;
         try {
-          const fx = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+          const fx = await fetch('https://open.er-api.com/v6/latest/USD');
           if (fx.ok) { const j = await fx.json(); cadRate = j.rates?.CAD ?? cadRate; }
-        } catch(_) {
-          try {
-            const fx2 = await fetch('https://open.er-api.com/v6/latest/USD');
-            if (fx2.ok) { const j2 = await fx2.json(); cadRate = j2.rates?.CAD ?? cadRate; }
-          } catch(_) {}
-        }
+        } catch(_) {}
         priceCAD = priceUSD * cadRate;
       }
 
       const $us   = v => '$'   + Math.round(v).toLocaleString('en-US');
       const $ca   = v => 'CA$' + Math.round(v).toLocaleString('en-CA');
-      const $mcap = v => {
-        if (!v) return '—';
-        if (v >= 1e12) return '$' + (v/1e12).toFixed(2) + 'T';
-        if (v >= 1e9)  return '$' + (v/1e9).toFixed(1)  + 'B';
-        return '$' + (v/1e6).toFixed(0) + 'M';
-      };
 
       usdEl.textContent = $us(priceUSD);
       document.getElementById('btc-cad').textContent  = $ca(priceCAD);
       document.getElementById('btc-high').textContent = high24 ? $us(high24) : '—';
       document.getElementById('btc-low').textContent  = low24  ? $us(low24)  : '—';
-      document.getElementById('btc-mcap').textContent = $mcap(mcapUSD);
+      document.getElementById('btc-mcap').textContent = '—';
       document.getElementById('btc-ath').textContent  = '—';
 
       const badge = document.getElementById('btc-change-badge');
-      badge.textContent      = (chg24h >= 0 ? '▲ +' : '▼ ') + chg24h.toFixed(2) + '%';
-      badge.style.background = chg24h >= 0 ? 'rgba(74,222,128,0.15)' : 'rgba(248,113,113,0.15)';
-      badge.style.color      = chg24h >= 0 ? '#4ADE80' : '#F87171';
+      if (chg24h != null && !isNaN(chg24h)) {
+        badge.textContent      = (chg24h >= 0 ? '▲ +' : '▼ ') + chg24h.toFixed(2) + '%';
+        badge.style.background = chg24h >= 0 ? 'rgba(74,222,128,0.15)' : 'rgba(248,113,113,0.15)';
+        badge.style.color      = chg24h >= 0 ? '#4ADE80' : '#F87171';
+      }
 
       const now = new Date();
       document.getElementById('btc-updated').textContent =
