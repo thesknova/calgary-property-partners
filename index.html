@@ -71,6 +71,8 @@
   #menubar .menu-item:hover { color:var(--text); }
   #menubar .right { display:flex; align-items:center; gap:14px; color:var(--text-dim); font-family:'DM Mono',monospace; font-size:11px; }
   #clock { color:var(--text); }
+  #menubar .credit { color:var(--gold); opacity:0.8; text-decoration:none; transition:opacity .2s; }
+  #menubar .credit:hover { opacity:1; }
 
   /* ── DESKTOP ICONS ── */
   #icons-area {
@@ -477,6 +479,7 @@
 
   /* ── MOBILE ── */
   @media (max-width: 768px) {
+    #menubar .location, #menubar .menu-item { display: none; }
     /* Windows fill the screen below the menu bar */
     .window {
       position: fixed !important;
@@ -538,7 +541,8 @@
     <span class="menu-item">Help</span>
   </div>
   <div class="right">
-    <span>Calgary, AB</span>
+    <span class="credit">Built by Shin Kawaguchi</span>
+    <span class="location">Calgary, AB</span>
     <span id="clock">12:00 PM</span>
   </div>
 </div>
